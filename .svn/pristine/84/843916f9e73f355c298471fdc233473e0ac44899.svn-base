@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:p="http://www.springframework.org/schema/p"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:jpa="http://www.springframework.org/schema/data/jpa" xmlns:tx="http://www.springframework.org/schema/tx"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans
+        http://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/context
+        http://www.springframework.org/schema/context/spring-context.xsd
+        http://www.springframework.org/schema/data/jpa 
+        http://www.springframework.org/schema/data/jpa/spring-jpa-1.2.xsd
+        http://www.springframework.org/schema/tx
+        http://www.springframework.org/schema/tx/spring-tx-4.0.xsd">
+
+	<!--引入咋们的外部资源 -->
+	<context:property-placeholder location="classpath:db.properties"></context:property-placeholder>
+
+	<!--配置咋们的数据源 -->
+	<bean id="dataSource" class="com.mchange.v2.c3p0.ComboPooledDataSource">
+		<property name="jdbcUrl" value="${jdbc.url}"></property>
+		<property name="user" value="${jdbc.user}"></property>
+		<property name="driverClass" value="${jdbc.driver}"></property>
+		<property name="password" value="${jdbc.password}"></property>
+	</bean>
+
+	<!--配置JPA实现产品的适配器 -->
+	<bean id="hibernateJpaVendorAdapter"
+		class="org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter"></bean>
+
+	<!--配置的是EntityManagerFactory -->
+	<bean id="entityManagerFactoryBean"
+		class="org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean">
+		<!--注入咋们的数据源 -->
+		<property name="dataSource" ref="dataSource"></property>
+		<!--配置的是JPA的扫描器 -->
+		<property name="packagesToScan" value="com.qf"></property>
+		<!--引入咋们的JPA实现产品的适配器对象 -->
+		<property name="jpaVendorAdapter" ref="hibernateJpaVendorAdapter"></property>
+		<!--配置的是jpa中除去连接数据库信息之外的额外的信息 -->
+		<property name="jpaProperties">
+			<props>
+				<prop key="hibernate.hbm2ddl.auto">update</prop>
+				<prop key="hibernate.show_sql">true</prop>
+				<prop key="hibernate.format_sql">true</prop>
+				<prop key="hibernate.dialect">org.hibernate.dialect.MySQL5Dialect</prop>
+			</props>
+		</property>
+	</bean>
+
+	<!--配置的是EntityManager的事务问题 -->
+	<bean id="jpaTransactionManager" class="org.springframework.orm.jpa.JpaTransactionManager">
+		<property name="entityManagerFactory" ref="entityManagerFactoryBean"></property>
+	</bean>
+
+	<!--应用这个事务 -->
+
+	<tx:annotation-driven transaction-manager="jpaTransactionManager" />
+
+	<!--假设你还用了 springmvc的话那你还需要添加 Spring的注解扫描 -->
+	<!-- <context:component-scan base-package="com.qf"></context:component-scan> -->
+
+	<!--SpringData的配置 base-package="com.qf.junit.test" ：表示的是扫描一个包 并且将这个包里面所有继承于Repository(或者他的子类)这个类的类 
+		的对象放入到Spring的容器里面去 -->
+	<jpa:repositories base-package="com.qf"
+		transaction-manager-ref="jpaTransactionManager"
+		entity-manager-factory-ref="entityManagerFactoryBean"></jpa:repositories>
+
+	<!--配置Spring的注解扫描 -->
+	<!-- <context:component-scan base-package="com.qf"></context:component-scan> -->
+<!-- 自动扫描 -->
+	<context:component-scan base-package="com.qf">
+		<!-- 扫描时跳过 @Controller 注解的JAVA类（控制器） -->
+		<context:exclude-filter type="annotation"
+			expression="org.springframework.stereotype.Controller" />
+	</context:component-scan>
+</beans>

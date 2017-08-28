@@ -1,0 +1,32 @@
+package com.qf.controll;
+
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+
+import com.qf.crudrepository.UserRepository2;
+/**
+ * @ClassName: UserControll 
+ * @Description: 测试
+ * @author 赵凯琦
+ * @date 2017-7-28 下午2:55:03
+ */
+@Controller
+public class UserControll {
+
+	@RequestMapping("/{jn}")
+	public String hello(@PathVariable String jn) {
+		return jn;
+	}
+	
+	@RequestMapping("/index")
+	public String save() {
+		System.out.println("执行到了控制层");
+		return "main";
+	}
+}

@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+	xmlns:p="http://www.springframework.org/schema/p"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:jpa="http://www.springframework.org/schema/data/jpa" 
+	xmlns:aop="http://www.springframework.org/schema/aop"
+	 xmlns:tx="http://www.springframework.org/schema/tx"
+	xmlns:mvc="http://www.springframework.org/schema/mvc"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans
+        http://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/context
+        http://www.springframework.org/schema/context/spring-context.xsd
+        http://www.springframework.org/schema/data/jpa 
+        http://www.springframework.org/schema/data/jpa/spring-jpa-1.2.xsd
+         http://www.springframework.org/schema/aop
+        http://www.springframework.org/schema/aop/spring-aop-4.0.xsd
+        http://www.springframework.org/schema/tx
+        http://www.springframework.org/schema/tx/spring-tx-4.0.xsd
+        http://www.springframework.org/schema/mvc
+        http://www.springframework.org/schema/mvc/spring-mvc.xsd">
+
+	<!--引入咋们的外部资源 -->
+	<context:property-placeholder location="classpath:db.properties"></context:property-placeholder>
+
+	<!--配置咋们的数据源 -->
+	<bean id="dataSource" class="com.mchange.v2.c3p0.ComboPooledDataSource">
+		<property name="jdbcUrl" value="${jdbc.url}"></property>
+		<property name="user" value="${jdbc.user}"></property>
+		<property name="driverClass" value="${jdbc.driver}"></property>
+		<property name="password" value="${jdbc.password}"></property>
+	</bean>
+
+	<!--配置JPA实现产品的适配器 -->
+	<bean id="hibernateJpaVendorAdapter"
+		class="org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter"></bean>
+
+	<!--配置的是EntityManagerFactory -->
+	<bean id="entityManagerFactoryBean"
+		class="org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean">
+		<!--注入咋们的数据源 -->
+		<property name="dataSource" ref="dataSource"></property>
+		<!--配置的是JPA的扫描器 -->
+		<property name="packagesToScan" value="com.qf"></property>
+		<!--引入咋们的JPA实现产品的适配器对象 -->
+		<property name="jpaVendorAdapter" ref="hibernateJpaVendorAdapter"></property>
+		<!--配置的是jpa中除去连接数据库信息之外的额外的信息 -->
+		<property name="jpaProperties">
+			<props>
+				<prop key="hibernate.hbm2ddl.auto">update</prop>
+				<prop key="hibernate.show_sql">true</prop>
+				<prop key="hibernate.format_sql">true</prop>
+				<prop key="hibernate.dialect">org.hibernate.dialect.MySQL5Dialect</prop>
+			</props>
+		</property>
+	</bean>
+
+	<!--配置的是EntityManager的事务问题 -->
+	<bean id="jpaTransactionManager" class="org.springframework.orm.jpa.JpaTransactionManager">
+		<property name="entityManagerFactory" ref="entityManagerFactoryBean"></property>
+	</bean>
+
+	<!--应用这个事务 -->
+
+	<tx:annotation-driven transaction-manager="jpaTransactionManager" />
+
+	<!--假设你还用了 springmvc的话那你还需要添加 Spring的注解扫描 -->
+	<!-- <context:component-scan base-package="com.qf"></context:component-scan> -->
+
+	<!--SpringData的配置 base-package="com.qf.junit.test" ：表示的是扫描一个包 并且将这个包里面所有继承于Repository(或者他的子类)这个类的类 
+		的对象放入到Spring的容器里面去 -->
+	<jpa:repositories base-package="com.qf"
+		transaction-manager-ref="jpaTransactionManager"
+		entity-manager-factory-ref="entityManagerFactoryBean"></jpa:repositories>
+
+	<!--配置Spring的注解扫描 -->
+	<!-- <context:component-scan base-package="com.qf"></context:component-scan> -->
+<!-- 自动扫描 -->
+	<context:component-scan base-package="com.qf">
+		<!-- 扫描时跳过 @Controller 注解的JAVA类（控制器） -->
+		<context:exclude-filter type="annotation"
+			expression="org.springframework.stereotype.Controller" />
+	</context:component-scan>
+	
+	
+	
+	
+	
+	
+	 <!--这个地方咋们配置的这个shiroFilter这个名字必须和 Web.xml中保持一致-->
+	<bean id="shiroFilter" class="org.apache.shiro.spring.web.ShiroFilterFactoryBean">
+	    <!--配置的是咋们的安全管理器-->
+		<property name="securityManager" ref="securityManager" />
+	    <!--当我们请求这个页面的时候  那么如果我们没有进行用户的认证的话那么就需要跳转到下面action去执行-->	
+		<property name="loginUrl" value="/login.action" />
+		<!--这个没有权利访问某个资源的时候 跳转的页面-->
+		<property name="unauthorizedUrl" value="/refuse.jsp" />
+		<!--用户认证成功跳转到指定的action去-->
+	    <property name="successUrl" value="/first.action"></property>
+		<!--实实在在的过滤器-->
+		<property name="filterChainDefinitions">
+			<value>
+			    
+			    <!--授权处理-->
+			    <!-- /bobo.action = perms[visite11] -->   <!--不常用-->
+			    <!-- /bobo.action = perms[visite]  -->
+			   <!--  /bobo.action = perms[bobo] -->
+			 
+			    <!--配置一个退出的过滤器-->
+			    /logout.action=logout
+			    <!--所有的页面都需要用户的认证  技巧: /** 这个一般都要写到最后 不然是会出问题的-->
+			    /**=authc
+			    <!-- /** anon :表示的是 所有资源部经过认证就可以访问-->
+				<!-- /** anon -->
+				
+				
+			</value>
+		</property>
+	</bean>
+
+
+	<!-- 安全管理器 -->
+	<bean id="securityManager" class="org.apache.shiro.web.mgt.DefaultWebSecurityManager">
+		<property name="realm" ref="userRealm" />
+	</bean>
+
+	<!-- 自定义 realm -->
+	<bean id="userRealm" class="com.qf.realm.MyRealm">
+	</bean>
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+</beans>
